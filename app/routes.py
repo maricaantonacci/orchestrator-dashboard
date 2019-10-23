@@ -19,6 +19,9 @@ import uuid as uuid_generator
 
 # Hashicorp vault support integration
 from app.vault_integration import VaultIntegration
+iam_base_url = settings.iamUrl
+iam_client_id = settings.iamClientID
+iam_client_secret = settings.iamClientSecret
 
 issuer = settings.iamUrl
 if not issuer.endswith('/'):
@@ -45,6 +48,8 @@ app.logger.debug("TOSCA INFO: " + json.dumps(toscaInfo))
 app.logger.debug("EXTERNAL_LINKS: " + json.dumps(settings.external_links) )
 app.logger.debug("ENABLE_ADVANCED_MENU: " + str(settings.enable_advanced_menu) )
 
+#______________________________________
+# vault section
 vault_url = app.config.get('VAULT_URL')
 if vault_url:
    app.config.from_json('vault-config.json')
@@ -747,8 +752,7 @@ def depdel(depid=None):
 
 def delete_secret_from_vault(access_token, secret_path):
 
-    vault = VaultIntegration(vault_url, iam_base_url, iam_client_id, iam_client_secret, vault_bound_audience,
-                             access_token, vault_secrets_path)
+    vault = VaultIntegration(vault_url, iam_base_url, iam_client_id, iam_client_secret, vault_bound_audience, access_token, vault_secrets_path)
 
     auth_token = vault.get_auth_token()
 
