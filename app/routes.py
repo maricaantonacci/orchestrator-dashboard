@@ -1,4 +1,5 @@
 from app import app, iam_blueprint, sla as sla, mail, settings, utils
+from werkzeug.exceptions import Forbidden
 from flask import json, render_template, request, redirect, url_for, flash, session, make_response
 from flask_mail import Message
 import requests
@@ -569,6 +570,14 @@ def home():
 
     if account_info.ok:
         account_info_json = account_info.json()
+
+        if settings.iamGroups:
+            user_groups = account_info_json['groups']
+            if not set(settings.iamGroups).issubset(user_groups):
+                app.logger.debug("No match on group membership. User group membership: " + json.dumps(user_groups))
+                message = Markup('You need to be a member of the following IAM groups: {0}. <br> Please, visit <a href="{1}">{1}</a> and apply for the requested membership.'.format(json.dumps(settings.iamGroups), settings.iamUrl))
+                raise Forbidden(description=message)
+
         session['userid'] = account_info_json['sub']
         session['username'] = account_info_json['name']
         session['useremail'] = account_info_json['email']
