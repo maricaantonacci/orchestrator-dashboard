@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-
+<div class="container-fluid">
 <div class="container mt-2" id="cardsContainer" xmlns="http://www.w3.org/1999/html">
     <div class="input-group mb-4">
       <div class="input-group-prepend">
@@ -43,6 +43,7 @@
     {% if templates|count % 3 != 1 %}
     </div>
     {% endif %}
+</div>
 </div>
 
 <script>
@@ -102,6 +103,7 @@ $(".tosca-descr").dotdotdot({
   color: white;
   //font-family: 'Abel', sans-serif;
   //font-family: 'Roboto Condensed', sans-serif;
+  opacity: 0.90;
 }
 
 
