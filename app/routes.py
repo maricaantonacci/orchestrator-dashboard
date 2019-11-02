@@ -612,7 +612,7 @@ def home():
                 insert_values = (
                     account_info_json['sub'], account_info_json['name'], account_info_json['preferred_username'],
                     account_info_json['given_name'], account_info_json['family_name'], email,
-                    account_info_json['organisation_name'], avatar(email, 26), role, '1')
+                    account_info_json['organisation_name'], utils.avatar(email, 26), role, '1')
                 cursor.execute(insert_query, insert_values)
                 connection.commit()
             else:
