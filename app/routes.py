@@ -681,7 +681,7 @@ def depoutput(depid=None):
 
     access_token = iam_blueprint.session.token['access_token']
 
-    if not depid in session['deployments_uuid_array']:
+    if not session['userrole'].lower() == 'admin' and not depid in session['deployments_uuid_array']:
         flash("You are not allowed to browse this page!")
         return redirect(url_for('showdeployments'))
 
