@@ -103,7 +103,7 @@ class VaultClient:
             secret = self.client.secrets.kv.v2.read_secret_version(path=secret_path, mount_point='secrets')
         except hvac.exceptions.InvalidPath as e:
             raise Exception("[FATAL] Unable to read vault path: {}".format(str(e)))
-        print(secret)
+
         return secret["data"]["data"][key]
 
     def delete_secret(self, token, secret_path):
