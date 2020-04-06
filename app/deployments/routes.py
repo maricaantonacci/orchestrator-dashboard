@@ -142,6 +142,29 @@ def deplog(physicalId=None):
     log = "Not found" if not response.ok else response.text
     return render_template('deplog.html', log=log)
 
+@deployments_bp.route('/infra/<physicalId>/details')
+@auth.authorized_with_valid_token
+def depinfradetails(physicalId=None, path=None):
+    access_token = iam_blueprint.session.token['access_token']
+    headers = {'Authorization': 'id = im; type = InfrastructureManager; token = %s;' % access_token}
+
+    app.logger.debug("Configuration: " + json.dumps(settings.orchestratorConf))
+
+    url = settings.orchestratorConf['im_url'] + "/infrastructures/" + physicalId
+    response = requests.get(url, headers=headers)
+
+    vms_url = response.text.split()
+    app.logger.info(vms_url)
+
+    details = []
+    headers.update({ "Accept": "application/json"})
+    for u in vms_url:
+         vm_details = requests.get(u, headers=headers)
+         vminfo = utils.format_json_radl(vm_details.json()["radl"])
+         details.append(vminfo)
+
+    return render_template('depinfradetails.html', vmsdetails=details)
+
 
 @deployments_bp.route('/<depid>/delete')
 @auth.authorized_with_valid_token
@@ -510,13 +533,16 @@ def delete_secret_from_vault(access_token, secret_path):
     vault_role = app.config.get("VAULT_ROLE")
 
     jwt_token = auth.exchange_token_with_audience(iam_base_url,
-                                                  iam_client_id, iam_client_secret, access_token,
+                                                  iam_client_id,
+                                                  iam_client_secret,
+                                                  access_token,
                                                   vault_bound_audience)
 
-    vault_client = app.vault.VaultClient(vault_url, jwt_token, vault_role)
+    vault_client = vaultservice.connect(jwt_token, vault_role)
 
-    delete_token = vault_client.get_token(vault_delete_policy, vault_delete_token_time_duration,
-                                   vault_delete_token_renewal_time_duration)
+    delete_token = vault_client.get_token(vault_delete_policy,
+                                          vault_delete_token_time_duration,
+                                          vault_delete_token_renewal_time_duration)
 
     vault_client.delete_secret(delete_token, secret_path)
 

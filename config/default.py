@@ -5,7 +5,7 @@ IAM_CLIENT_ID = "XXX-XXX-XXX-XXX-XXX"
 IAM_CLIENT_SECRET = "************"
 IAM_BASE_URL = "https://iam.example.com"
 ORCHESTRATOR_URL = "https://orchestrator.example.com"
-CALLBACK_URL = "https://dashboard.example.com/callback"
+CALLBACK_URL = "https://dashboard.example.com/home/callback"
 
 ### TOSCA-related SETTINGS
 TOSCA_TEMPLATES_DIR = "/opt/tosca-templates"
@@ -20,7 +20,10 @@ SQLALCHEMY_VERSION_HEAD = "88bc3c2c02a6"
 ### NOTIFICATION SETTINGS
 MAIL_SERVER = "relay-mbox.recas.ba.infn.it"
 MAIL_PORT = "25"
-MAIL_SENDER = "admin@orchestrator-dashboard"
+MAIL_DEFAULT_SENDER = "admin@orchestrator-dashboard"
+MAIL_USERNAME = None
+MAIL_PASSWORD = None
+
 
 ### ADMIN SETTINGS
 SUPPORT_EMAIL = "marica.antonacci@ba.infn.it"
@@ -29,6 +32,7 @@ EXTERNAL_LINKS = []
 OVERALL_TIMEOUT = 720
 PROVIDER_TIMEOUT = 720
 LOG_LEVEL = "info"
+UPLOAD_FOLDER = "/tmp"
 
 FEATURE_ADVANCED_MENU = "no"
 FEATURE_UPDATE_DEPLOYMENT = "no"
