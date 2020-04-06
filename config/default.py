@@ -46,6 +46,3 @@ NAVBAR_BRAND_TEXT = "PaaS Orchestrator Dashboard"
 ### Template Paths
 HOME_TEMPLATE = 'home.html'
 FOOTER_TEMPLATE = 'footer.html'
-
-
-
