@@ -19,6 +19,8 @@ class Deployment(db.Model):
     endpoint = db.Column(db.String(256), nullable=True)
     selected_template = db.Column(db.Text, nullable=True)
     template = db.Column(db.Text, nullable=True)
+    template_parameters = db.Column(db.Text, nullable=True)
+    template_metadata = db.Column(db.Text, nullable=True)
     inputs = db.Column(db.Text, nullable=True)
     stinputs = db.Column(db.Text, nullable=True)
     params = db.Column(db.Text, nullable=True)

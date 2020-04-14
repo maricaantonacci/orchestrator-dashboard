@@ -142,6 +142,7 @@ def deplog(physicalId=None):
     log = "Not found" if not response.ok else response.text
     return render_template('deplog.html', log=log)
 
+
 @deployments_bp.route('/infra/<physicalId>/details')
 @auth.authorized_with_valid_token
 def depinfradetails(physicalId=None, path=None):
@@ -496,6 +497,8 @@ def createdep():
                                         links=json.dumps(rs_json['links']),
                                         sub=rs_json['createdBy']['subject'],
                                         template=template_text,
+                                        template_metadata=source_template['metadata_file'],
+                                        template_parameters=source_template['parameters_file'],
                                         selected_template=selected_template,
                                         inputs=json.dumps(inputs),
                                         stinputs=json.dumps(stinputs),
