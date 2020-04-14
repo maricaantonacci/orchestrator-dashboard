@@ -51,7 +51,7 @@ def inject_settings():
         welcome_message=app.config.get('WELCOME_MESSAGE'),
         navbar_brand_text=app.config.get('NAVBAR_BRAND_TEXT'),
         navbar_brand_icon=app.config.get('NAVBAR_BRAND_ICON'),
-        enable_vault_integration=False if app.config.get('ENABLE_VAULT_INTEGRATION').lower() == 'no' else True,
+        enable_vault_integration=False if app.config.get('FEATURE_VAULT_INTEGRATION').lower() == 'no' else True,
         external_links=app.config.get('EXTERNAL_LINKS') if app.config.get('EXTERNAL_LINKS') else [],
         enable_advanced_menu=app.config.get('FEATURE_ADVANCED_MENU') if app.config.get(
             'FEATURE_ADVANCED_MENU') else "no",
@@ -67,7 +67,7 @@ migrate.init_app(app, db)
 alembic.init_app(app, run_mkdir=False)
 tosca.init_app(app)
 
-if app.config.get("ENABLE_VAULT_INTEGRATION") == "yes":
+if app.config.get("FEATURE_VAULT_INTEGRATION") == "yes":
     vaultservice.init_app(app)
 
 mail = Mail(app)
