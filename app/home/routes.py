@@ -181,7 +181,7 @@ def create_and_send_email(subject, sender, recipients, status):
     send_email(subject,
                sender=sender,
                recipients=recipients,
-               html_body=render_template('email.html', status=status))
+               html_body=render_template(app.config.get('MAIL_TEMPLATE'), status=status))
 
 
 def send_email(subject, sender, recipients, html_body):
