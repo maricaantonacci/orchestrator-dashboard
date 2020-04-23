@@ -119,7 +119,7 @@ def logout():
     return redirect(url_for('home_bp.login'))
 
 
-@home_bp.route('/callback', methods=['POST'])
+@app.route('/callback', methods=['POST'])
 def callback():
     payload = request.get_json()
     app.logger.info("Callback payload: " + json.dumps(payload))
@@ -167,6 +167,18 @@ def callback():
         if status == 'CREATE_FAILED':
             try:
                 create_and_send_email("Deployment failed", mail_sender, [user_email], status)
+            except Exception as error:
+                utils.logexception("sending email:".format(error))
+
+        if status == 'UPDATE_COMPLETE':
+            try:
+                create_and_send_email("Deployment update complete", mail_sender, [user_email], status)
+            except Exception as error:
+                utils.logexception("sending email:".format(error))
+
+        if status == 'UPDATE_FAILED':
+            try:
+                create_and_send_email("Deployment update failed", mail_sender, [user_email], status)
             except Exception as error:
                 utils.logexception("sending email:".format(error))
 
