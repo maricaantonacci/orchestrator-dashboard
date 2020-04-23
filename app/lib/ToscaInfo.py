@@ -196,6 +196,7 @@ def updatabledeployment(inputs):
         if 'updatable' in value:
             if value['updatable'] == True:
                 updatable = True
+                break
 
     return updatable
 
