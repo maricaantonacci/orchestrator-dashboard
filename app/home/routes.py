@@ -203,8 +203,9 @@ def contact():
 
     except Exception as error:
         utils.logexception("sending email:".format(error))
+        return Markup("<div class='alert alert-danger' role='alert'>Oops, error sending message.</div>")
 
-    return "Message sent!"
+    return Markup("<div class='alert alert-success' role='alert'>Your message has been sent, Thank you!</div>")
 
 
 def create_and_send_email(subject, sender, recipients, uuid, status):
