@@ -52,7 +52,7 @@ def is_enabling_services(deployment_type, service_type):
 
 
 def get_slas(access_token, slam_url, cmdb_url, deployment_type=""):
-    headers = {'Authorization': 'bearer %s' % access_token}
+    headers = {'Authorization': 'Bearer %s' % access_token}
 
     url = slam_url + "/preferences/" + session['organisation_name']
 
