@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .. import app, iam_blueprint, mail, tosca
+from .. import app, mail, tosca
 from app.lib import utils, auth, settings, dbhelpers, openstack
 from app.models.User import User
 from markupsafe import Markup
@@ -22,14 +22,6 @@ from flask_mail import Message
 from threading import Thread
 import json
 
-
-iam_base_url = settings.iamUrl
-iam_client_id = settings.iamClientID
-iam_client_secret = settings.iamClientSecret
-
-issuer = settings.iamUrl
-if not issuer.endswith('/'):
-    issuer += '/'
 
 app.jinja_env.filters['tojson_pretty'] = utils.to_pretty_json
 app.jinja_env.filters['extract_netinterface_ips'] = utils.extract_netinterface_ips
@@ -69,76 +61,35 @@ def check_template_access(allowed_groups, user_groups):
 @app.route('/')
 @home_bp.route('/')
 def home():
-    if not iam_blueprint.session.authorized:
+    auth_blueprint = app.get_auth_blueprint()
+    if auth_blueprint is None or not app.get_auth_blueprint().session.authorized:
         return redirect(url_for('home_bp.login'))
 
-    account_info = iam_blueprint.session.get("/userinfo")
+    account_info = app.get_auth_blueprint().session.get("/userinfo")
+
+    templates_info = {}
+    tg = False
 
     if account_info.ok:
         account_info_json = account_info.json()
         user_groups = account_info_json['groups']
 
-        if settings.iamGroups:
-            if set(settings.iamGroups)&set(user_groups) == set():
-                app.logger.debug("No match on group membership. User group membership: "
-                                 + json.dumps(user_groups))
-                message = Markup(
-                    'Your identity has been verified successfully, but you are not authorized to access the services.<br>' +
-                    'Please, contact the administrators ({}) in order to get proper permissions'.format(app.config.get('SUPPORT_EMAIL')))
-                raise Forbidden(description=message)
-
-        session['userid'] = account_info_json['sub']
-        session['username'] = account_info_json['name']
-        session['useremail'] = account_info_json['email']
-        session['userrole'] = 'user'
-        session['gravatar'] = utils.avatar(account_info_json['email'], 26)
-        session['organisation_name'] = account_info_json['organisation_name']
-        session['usergroups'] = account_info_json['groups']
-        # access_token = iam_blueprint.session.token['access_token']
-
-        # check database
-        # if user not found, insert
-        #
-        app.logger.info(dir(User))
-        user = dbhelpers.get_user(account_info_json['sub'])
-        if user is None:
-            email = account_info_json['email']
-            admins = json.dumps(app.config['ADMINS'])
-            role = 'admin' if email in admins else 'user'
-
-            user = User(sub=account_info_json['sub'],
-                        name=account_info_json['name'],
-                        username=account_info_json['preferred_username'],
-                        given_name=account_info_json['given_name'],
-                        family_name=account_info_json['family_name'],
-                        email=email,
-                        organisation_name=account_info_json['organisation_name'],
-                        picture=utils.avatar(email, 26),
-                        role=role,
-                        active=1)
-            dbhelpers.add_object(user)
-
-        session['userrole'] = user.role  # role
-
-        templates_info = {}
-        tg = False
-
         if tosca.tosca_gmetadata:
             templates_info = {k: v for (k, v) in tosca.tosca_gmetadata.items() if
-                     check_template_access(v.get("metadata").get("allowed_groups"), user_groups)}
+                check_template_access(v.get("metadata").get("allowed_groups"), user_groups)}
             tg = True
         else:
             templates_info = {k: v for (k, v) in toscaInfo.items() if
-             check_template_access(v.get("metadata").get("allowed_groups"), user_groups)}
+                check_template_access(v.get("metadata").get("allowed_groups"), user_groups)}
 
-
-        return render_template(app.config.get('PORTFOLIO_TEMPLATE'), templates_info=templates_info, tg=tg)
+    return render_template(app.config.get('PORTFOLIO_TEMPLATE'), templates_info=templates_info, tg=tg)
 
 
 @home_bp.route('/logout')
 def logout():
+
+    app.get_auth_blueprint().session.get("/logout")
     session.clear()
-    iam_blueprint.session.get("/logout")
     return redirect(url_for('home_bp.login'))
 
 
@@ -222,7 +173,7 @@ def getauthorization():
     for task in tasks["pre_tasks"]:
         func = task["action"]
         args = task["args"]
-        args["access_token"] = iam_blueprint.session.token['access_token']
+        args["access_token"] = app.get_auth_blueprint().session.token['access_token']
         if func in functions:
             functions[func](**args)
 

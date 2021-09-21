@@ -4,6 +4,12 @@ CONFIGURATION_PROFILE = "default"
 IAM_CLIENT_ID = "XXX-XXX-XXX-XXX-XXX"
 IAM_CLIENT_SECRET = "************"
 IAM_BASE_URL = "https://iam.example.com"
+EGI_AAI_BASE_URL="https://https://aai-dev.egi.eu/oidc/"
+EGI_AAI_CLIENT_ID=""
+EGI_AAI_CLIENT_SECRET=""
+
+TRUSTED_OIDC_IDP_LIST = [ { 'iss': 'https://iam.example.org/', 'type': 'indigoiam' } ]
+
 ORCHESTRATOR_URL = "https://orchestrator.example.com"
 CALLBACK_URL = "https://dashboard.example.com/home/callback"
 
@@ -13,7 +19,7 @@ TOSCA_PARAMETERS_DIR = "/opt/tosca-parameters"
 TOSCA_METADATA_DIR = "/opt/tosca-metadata"
 
 ### DB SETTINGS
-SQLALCHEMY_DATABASE_URI = "mysql+pymysql://dashboard:dashboard@localhost/orchestrator_dashboard",
+SQLALCHEMY_DATABASE_URI = "mysql+pymysql://oduser:oduser@localhost/orchestrator_dashboard_test",
 SQLALCHEMY_TRACK_MODIFICATIONS = "False"
 SQLALCHEMY_VERSION_HEAD = "88bc3c2c02a6"
 
@@ -38,7 +44,7 @@ PROVIDER_TIMEOUT = 720
 LOG_LEVEL = "info"
 UPLOAD_FOLDER = "/tmp"
 
-FEATURE_ADVANCED_MENU = "no"
+ENABLE_ADVANCED_MENU = "yes"
 FEATURE_UPDATE_DEPLOYMENT = "no"
 FEATURE_HIDDEN_DEPLOYMENT_COLUMNS = "4, 5, 7"
 FEATURE_VAULT_INTEGRATION = "no"
