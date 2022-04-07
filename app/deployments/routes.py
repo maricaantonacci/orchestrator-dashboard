@@ -562,7 +562,7 @@ def createdep():
 
     for key,value in stinputs.items():
         # Manage security groups
-        if value["type"]=="map" and value["entry_schema"]["type"]=="tosca.datatypes.network.PortSpec":
+        if value["type"]=="map" and (value["entry_schema"]["type"]=="tosca.datatypes.network.PortSpec" or value["entry_schema"]["type"]=="tosca.datatypes.indigo.network.PortSpec"):
             if key in inputs:
                 try:
                     inputs[key] = json.loads(form_data[key])
