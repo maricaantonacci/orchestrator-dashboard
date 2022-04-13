@@ -664,6 +664,8 @@ def createdep():
             try:
                 del inputs[key]
                 project = next(filter(lambda tenant: tenant.get('group') == session['active_usergroup'], value['auth']['tenants']), None)
+                if not project:
+                    raise IndexError("Project not configured for S3")
                 access, secret = keystone.get_or_create_ec2_creds(access_token, project.get('name'), value["auth"]["url"], value["auth"]["identity_provider"], value["auth"]["protocol"])
                 access_key_input_name = value["inputs"]["aws_access_key"]
                 inputs[access_key_input_name] = access
