@@ -460,7 +460,13 @@ def configure():
 
     if selected_tosca:
 
-        template = tosca.tosca_info[selected_tosca]
+        template = copy.deepcopy(tosca.tosca_info[selected_tosca])
+        # Manage eventual overrides
+        for k,v in template['inputs'].items():
+            if 'group_overrides' in v and session['active_usergroup'] in v['group_overrides']:
+                overrides = v['group_overrides'][session['active_usergroup']]
+                template['inputs'][k] = {**v, **overrides}
+
         sla_id = tosca_helpers.getslapolicy(template)
 
         slas = sla.get_slas(access_token, settings.orchestratorConf['slam_url'], settings.orchestratorConf['cmdb_url'],
