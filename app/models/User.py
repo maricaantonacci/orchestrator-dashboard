@@ -1,35 +1,22 @@
+# Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2019-2020
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from app import db
 from sqlalchemy.orm import relationship
 
-class UserMixin(object):
 
-    @classmethod
-    def get_user(cls, subject):
-        return cls.query.get(subject)
-
-    @classmethod
-    def get_users(cls):
-        users = cls.query.order_by(User.family_name.desc(), User.given_name.desc()).all()
-        return users
-
-    @classmethod
-    def update_user(cls, subject, data):
-        cls.query.filter_by(sub=subject).update(data)
-        db.session.commit()
-
-    @classmethod
-    def get_ssh_pub_key(self, subject):
-        user = self.get_user(subject)
-        return user.sshkey
-
-    @classmethod
-    def delete_ssh_key(self, subject):
-        self.query.get(subject).sshkey = None
-        db.session.commit()
-
-
-
-class User(UserMixin, db.Model):
+class User(db.Model):
     __tablename__ = 'users'
     sub = db.Column(db.String(36), primary_key=True)
     name = db.Column(db.String(128), nullable=True)

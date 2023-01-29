@@ -1,15 +1,114 @@
 <br>
+
 {% for k,v in outputs.items() %}
 
-{% if "node_creds" in k or "cluster_creds" in k %}
-<p><strong>{{k}}.ssh_private_key</strong>: <pre>{{ v['token'] | replace("\\n", "\n") }}</pre></p>
-<p><strong>{{k}}.ssh_login</strong>: {{ v['user'] }}</p>
+{% set name = k %}
+{% if stoutputs[k] and stoutputs[k]['display_name'] %}
+{% set name = stoutputs[k]['display_name'] %}
+{% endif %}
 
-{% elif "endpoint" in k %}
-<p><strong>{{k}}</strong>: <a href="{{v}}" target="_blank">{{v}}</a></p>
+
+{% if (stoutputs[k] and stoutputs[k]['type'] == 'kubeconfig') or 'kubeconfig' in k %}
+
+<p><strong>{{name}}</strong>:
+<div id="{{k}}-creds" class="d-none">{{ v | replace("\\n", "\n") }}</div>
+<button class="btn btn-primary btn-sm" data-key="{{k}}" id="downloadBtn{{k}}" onclick="downloadCreds(this)"><i class="fa fa-download"></i> Download</button>
+<button class="btn btn-success btn-sm" data-key="{{k}}" id="copyBtn{{k}}" onclick="copyCreds(this)"><i class="fa fa-copy"></i> Copy to clipboard</button>
+<p></p>
+
+{% elif (stoutputs[k] and stoutputs[k]['type'] == 'url') or "url" in k or "endpoint" in k %}
+<p><strong>{{name}}</strong>: <a href="{{v}}" target="_blank">{{v}}</a></p>
+
+{% elif (stoutputs[k] and stoutputs[k]['type'] == 'ssh_user') %}
+<p><strong>ssh_account</strong>: {{v['os_user_name']}} </p>
+
+{% elif "node_creds" in k or "cluster_creds" in k %}
+{%if require_ssh_pubkey=='no' %}
+
+{% if v['token'] is  defined %}
+{% set v=[v] %}
+{% endif %}
+
+
+{% for creds in v %}
+<fieldset class="border p-1">
+{% if v|length == 1 %}
+<legend style="font-size: 1.0em;width:auto;padding:0 10px;"><strong>{{k}}</strong></legend>
+{% else %}
+<legend style="font-size: 1.0em;width:auto;padding:0 10px;"><strong>{{k}}[{{loop.index}}]</strong></legend>
+{% endif %}
+<p><strong>ssh_login</strong>: {{ creds['user'] }}</p>
+<p><strong>ssh_private_key</strong>:
+<div id="{{k}}_{{loop.index}}-creds" class="d-none ssh-key">{{ creds['token'] | replace("\\n", "\n") }}</div>
+<button class="btn btn-primary btn-sm" data-key="{{k}}_{{loop.index}}" id="downloadBtn{{k}}" onclick="downloadCreds(this, 'id_rsa_')"><i class="fa fa-download"></i> Download</button>
+<button class="btn btn-success btn-sm" data-key="{{k}}_{{loop.index}}" id="copyBtn{{k}}" onclick="copyCreds(this)"><i class="fa fa-copy"></i> Copy to clipboard</button>
+<p></p>
+</fieldset>
+{% endfor %}
+<p></p>
+{% endif %}
 
 {% else %}
 <p><strong>{{k}}</strong>: {{v}}</p>
 {% endif %}
 
+<!-- Description -->
+{% if stoutputs[k] and stoutputs[k]['description'] %}
+<p style="margin-left:20px;">{{stoutputs[k]['description'] | safe}}</p>
+{% endif %}
+{% if stoutputs[k] and stoutputs[k]['warning'] %}
+<div class="alert alert-warning" role="alert">
+  <strong>Warning: </strong>{{ stoutputs[k]['warning'] | safe }}
+</div>
+{% endif %}
+
+
 {% endfor %}
+
+<script>
+
+function download(filename, text) {
+  var element = document.createElement('a');
+  element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+  element.setAttribute('download', filename);
+
+  element.style.display = 'none';
+  document.body.appendChild(element);
+
+  element.click();
+
+  document.body.removeChild(element);
+}
+
+
+function copyCreds(button){
+  // build text area id from data-key attribute value
+  var keyid = "#" + button.getAttribute('data-key') + "-creds";
+  var text = $(button).parent().find(keyid)[0].innerHTML;
+
+  // Create a new textarea element and give it id='temp_element'
+  var textarea = document.createElement('textarea');
+  textarea.id = button.getAttribute('data-key') + '_temp_element';
+  textarea.style.height = 0;
+  document.body.appendChild(textarea);
+  textarea.value = text;
+  var selector = document.querySelector('#' + button.getAttribute('data-key') + '_temp_element');
+  selector.select();
+  document.execCommand('copy');
+  // Remove the textarea
+  document.body.removeChild(textarea);
+
+}
+
+function downloadCreds(button, prefix=""){
+  // build text area id from data-key attribute value
+  var keyid = "#" + button.getAttribute('data-key') + "-creds";
+  var text = $(button).parent().find(keyid)[0].innerHTML;
+
+  var filename = prefix + button.getAttribute('data-key');
+
+  download(filename, text);
+}
+
+</script>
+

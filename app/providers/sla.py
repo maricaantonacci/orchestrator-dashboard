@@ -1,3 +1,17 @@
+# Copyright (c) Istituto Nazionale di Fisica Nucleare (INFN). 2019-2020
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import requests
 from flask import session
 
@@ -38,9 +52,14 @@ def is_enabling_services(deployment_type, service_type):
 
 
 def get_slas(access_token, slam_url, cmdb_url, deployment_type=""):
-    headers = {'Authorization': 'bearer %s' % access_token}
+    headers = {'Authorization': 'Bearer %s' % access_token}
 
-    url = slam_url + "/preferences/" + session['organisation_name']
+    if 'active_usergroup' in session and session['active_usergroup'] is not None:
+        group = session['active_usergroup']
+    else:
+        group = session['organisation_name']
+
+    url = slam_url + "/preferences/" + group
 
     response = requests.get(url, headers=headers, timeout=20, verify=False)
 

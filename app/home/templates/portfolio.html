@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-2" id="cardsContainer" xmlns="http://www.w3.org/1999/html">
+    <div class="input-group mb-4">
+        <div class="input-group-prepend">
+            <div class="input-group-text">
+                <i class="fa fa-search"></i>
+            </div>
+        </div>
+        <input id="cardFilter" class="form-control py-2 border" type="text" onkeyup="cardFilter()" placeholder="Search...">
+    </div>
+    {% if services|length > 0 %}
+    <div class="row">
+        <div class="col-md-12">
+        {% include 'managed_services.html' %}
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12">
+            <hr style="height:1px;border-width:0;background-color:Gainsboro">
+        </div>
+    </div>
+    {% endif %}
+    <div class="row">
+        <div class="col-md-12">
+        <p class="font-weight-bold" style="font-size:20px;font-variant:small-caps">On-demand Services: </p>
+        {% for tosca_name, tosca in templates_info.items() %}
+            {% if loop.index % 3 == 1 %}
+            <!-- open card deck -->
+            <div class="card-deck">
+            {% endif %}
+                <div class="card mb-4" style="max-width: 20rem; max-height: 25rem;">
+                    <div class="card-body">
+                        <h5 class="card-title text-center">
+                            <strong> {% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %} </strong>
+                        </h5>
+                    </div>
+                    <div class="wrapper">
+                        <img class="card-img-bottom img-fluid" src="{{tosca['metadata']['icon']}}" alt="Card image cap">
+                        {% if tosca['metadata']['access_locked'] %}
+                        <div class="ribbon red">
+                            <span>{{ access_request_tag }}</span>
+                        </div>
+                        {% else %}
+                            {% if tosca['metadata']['tag'] is defined %}
+                        <div class="ribbon {{tosca['metadata']['tag_color']}}">
+                            <span>{{tosca['metadata']['tag']}}</span>
+                        </div>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                    <div class="card-img-overlay text-center" style="z-index: 1;">
+                        <h5>
+                            <strong> {% if tosca['metadata']['display_name'] is defined %}{{tosca['metadata']['display_name']}}{% else %}{{tosca_name}}{% endif %} </strong>
+                        </h5>
+                        <div id="toscaDescription" class="card-text service-descr">
+                            <small>{{tosca['description'] | safe}}</small>
+                        </div>
+                        <div class="row justify-content-center">
+                            <div class="col-4">
+                                <a class="badge badge-pill badge-info text-left read_more" tabindex="0" data-toggle="popover" title="Full description" data-trigger="focus" data-html="true" data-content="{{tosca['description']}}">Read More</a>
+                            </div>
+                            {% if tosca['metadata']['access_locked'] %}
+                            {% if enable_access_request == "yes" %}
+                            {% set pre_tasks = tosca['metadata']['authorization_required'] %}
+                            <div class="col-4">
+                                {% if tosca['metadata']['display_name'] is defined %}
+                                {% set service_label = tosca['metadata']['display_name'] %}
+                                {% else %}
+                                {% set service_label = tosca_name %}
+                                {% endif %}
+                                <a role="button" data-id="{{ service_label }}" data-action="{{ url_for('home_bp.sendaccessrequest', service_type=service_label) }}" class="badge badge-pill badge-danger" data-toggle="modal" data-target="#requestAccess"> Request Access</a>
+                            </div>
+                            {% endif %}
+                            {% elif tosca['metadata']['tag'] is defined and tosca['metadata']['tag']|upper == 'MAINTENANCE'   %}
+                            <!-- maintenance: do not show configure button -->
+                            {% else %}
+                            <div class="col-4">
+                                {% if enable_template_groups %}
+                                <a href="{{ url_for('deployments_bp.configure', selected_group=tosca_name) }}" class="badge badge-pill badge-primary">Configure</a>
+                                {% else %}
+                                <a href="{{ url_for('deployments_bp.configure', selected_tosca=tosca_name) }}" class="badge badge-pill badge-primary">Configure</a>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% if loop.index % 3 == 0 %}
+            <!-- close card deck -->
+            </div>
+            {% endif %}
+        {% endfor %}
+        {% if templates_info|count % 3 != 0 %}
+            <!-- close card deck -->
+            </div>
+        {% endif %}
+        </div> <!-- close col-12 -->
+    </div> <!-- close row -->
+    <!-- Modal begin -->
+    <div class="modal fade" id="requestAccess" tabindex="-1" role="dialog" aria-labelledby="requestAccess" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header px-lg-5">
+                    <h5 class="modal-title" id="listingModalLabel">Request Access</h5>
+                    <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="requestform" action="#" method="post">
+                        <div class="form-group">
+                            <label for="username">
+                                <strong>User</strong>
+                            </label>
+                            <div>
+                                <input type="text" class="form-control" name="username" id="username" value="{{ session['username'] }}" disabled>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">
+                                <strong>Mail</strong>
+                            </label>
+                            <div>
+                                <input type="email" class="form-control" name="email" id="email" value="{{ session['useremail'] }}" data-toggle="email">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="message">Message</label>
+                            <textarea required class="form-control" name="message" id="message" placeholder="Please, provide a detailed motivation for your request." rows="3"></textarea>
+                        </div>
+                        <input type="hidden" name="service_type" value="">
+                        <div class="form-group">
+                            <div>
+                                <button type="submit" class="btn btn-success">Submit</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--  end Modal -->
+</div> <!-- close container -->
+<script src="/static/js/catalogue.js"></script>
+<link rel="stylesheet" href="/static/css/catalogue.css">
+
+<script>
+    $('#requestAccess').on('show.bs.modal', function(event) {
+        var target = $(event.relatedTarget) // Button that triggered the modal
+        // Extract info from data-* attributes
+        var service = target.data('id')
+        var url = target.data('action')
+        var modal = $(this)
+        modal.find('.modal-title').text('Request access to service \"' + service + '\"')
+        modal.find('input[name="service_type"]').val(service)
+        modal.find('#requestform').prop('action', url)
+    })
+</script>
+{% endblock %}

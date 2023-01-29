@@ -4,9 +4,6 @@
 
 <div class="container">
 
-    {% include 'flashed_messages.html' %}
-
-    <br>
     <div class="card shadow mb-4">
         <div class="card-header py-3">
           <div class="row">
@@ -25,11 +22,11 @@
               </div>
             {% endif %}
 
-            <form id="depSubmit" action="{{ url_for('updatedep', template=selectedTemplate) }}" method="post" onsubmit="return checkForm(this);">
+            <form id="depSubmit" action="{{ url_for('deployments_bp.updatedep', template=selectedTemplate) }}" method="post" onsubmit="return checkForm(this);">
                 <div class="form-group row">
-                    <div class="col-md-2">Instance description:</div>
+                    <div class="col-md-2">Deployment description:</div>
                     <div class="col-md-10">
-                    <input type="text" class="form-control" id="additional_description" name="additional_description" placeholder="Instance description" value={{instance_description}} required>
+                    <input type="text" class="form-control" id="additional_description" name="additional_description" placeholder="description" value={{instance_description}} required>
                     </div>
                 </div>
 
@@ -63,7 +60,7 @@
                 <input type="hidden" name="depid" id="depid" value="{{depid}}"/>
                 <input type="hidden" name="template" id="template" value=""/>
                 <button type="submit" class="btn btn-success submitBtn">Submit</button>
-                <button id="cancelBtn" type=button class="btn btn-small btn-primary" onclick="location.href='{{ url_for('showdeployments') }}'">
+                <button id="cancelBtn" type=button class="btn btn-small btn-primary" onclick="location.href='{{ url_for('deployments_bp.showdeployments') }}'">
                 <span class="fas fa-ban mr-2"></span>Cancel</button>
             </form>
 

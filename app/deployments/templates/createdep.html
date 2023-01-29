@@ -1,13 +1,10 @@
 {% extends "base.html" %}
 
 {% block content %}
-
+<br>
 <div class="container">
 
-    {% include 'flashed_messages.html' %}
-
-    <br>
-    {% if ssh_pub_key is none  %}
+    {% if enable_vault_integration and template['metadata']['require_ssh_key'] and ssh_pub_key is none  %}
     <!-- Modal -->
         <div class="modal fade" id="sshPopupModal" tabindex="-1" role="dialog" aria-labelledby="sshPopupModalLabel" aria-hidden="true">
           <div class="modal-dialog" role="document">
@@ -19,17 +16,20 @@
                 </button>
               </div>
               <div class="modal-body">
-              <p>SSH keys allow you to establish a secure connection between your computer and your virtual machine. At least one public key has to be provided mandatorily.</p>
+              <p>SSH keys allow you to establish a secure connection between your computer and your virtual machine. At least one public key has to be provided.</p>
               <hr>
-              <p>To create a new ssh key pair or upload your public key, please go <a href="{{ url_for("ssh_keys") }}">here</a></p>
-              <p>You can still provide a key in the dedicated field of the form.</p>
-              <p>For more information, please visit our <a href="https://laniakea.readthedocs.io/en/latest/user_documentation/ssh_keys/ssh_keys.html" target="_blank">documentation page</a>.</p>
+              <p>To create a new ssh key pair or upload your public key, please go <a target="_blank" href="{{ url_for("vault_bp.ssh_keys") }}">here</a></p>
+              {% if user_documentation_url is defined %}
+              <p>For more information, please visit our <a href="{{ user_documentation_url }}" target="_blank">documentation site</a>.</p>
+              {% endif %}
               </div>
               <div class="modal-footer">
+                  {% if require_ssh_pubkey=='no' %}
                   <div class="d-flex flex-grow-1 justify-content-start custom-control custom-checkbox">
                       <input type="checkbox" class="custom-control-input" id="popupMaintenanceCheckbox" name="checkbox-maintenance"/>
                       <label class="custom-control-label checkbox-maintenance" for="popupMaintenanceCheckbox">Don't show me again</label>
                   </div>
+                  {% endif %}
                   <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
               </div>
             </div>
@@ -46,17 +46,27 @@
 
         <div class="card-body">
             <div class="alert alert-info">
-                <strong>Description:</strong> {{template['description']}}
+                <strong>Description:</strong> {{template['description'] | safe}}
             </div>
-
-            <form id="depSubmit" action="{{ url_for('createdep', template=selectedTemplate) }}" method="post">
+            {% if template['metadata']['disclaimer'] is defined %}
+            <div class="alert alert-danger">
+                    <span>
+                        <i class="fas fa-exclamation-circle"><strong> Please read carefully:</strong></i><br><br>
+                        {{template['metadata']['disclaimer']}}
+                    </span>
+            </div>
+            {% endif %}
+            <form id="depSubmit" action="{{ url_for('deployments_bp.createdep', template=selectedTemplate) }}" method="post" autocomplete="off" enctype="multipart/form-data">
                 <div class="form-group">
-                    <label for="additional_description">Instance description</label>
-                    <input type="text" class="form-control" id="additional_description" name="additional_description" placeholder="Instance description" value="" required>
+                    <label for="additional_description">Deployment description</label>
+                    <input type="text" class="form-control" id="additional_description" name="additional_description" placeholder="description" value="" maxlength="50" required>
                 </div>
                 {% include 'config_form.html' %}
-            <button type="submit" class="btn btn-success submitBtn">Submit</button>
-            <button id="cancelBtn" type=button class="btn btn-small btn-primary" onclick="location.href='{{ url_for('home') }}'">
+                <div id="myalert" class="alert alert-danger alert-dismissible fade show" style="display:none;" role="danger">
+                  <strong>Warning!</strong> You have not filled some mandatory fields. Please check the red boxes in each tab.
+                </div>
+                <button type="submit" class="btn btn-success submitBtn">Submit</button>
+                <button id="cancelBtn" type=button class="btn btn-small btn-primary" onclick="location.href='{{ url_for('home_bp.home') }}'">
                 <span class="fas fa-ban mr-2"></span>Cancel</button>
             </form>
         </div>
@@ -88,6 +98,37 @@ $(document).ready(function () {
 });
 
 $(document).ready(function () {
+  $(".nav-link").click(function () {
+     checkForm()
+  });
+  $('input').on("input", function () {
+     checkForm()
+  });
+
+});
+
+function checkForm(){
+    var valid = true;
+    $('input').each(function(){
+       if ( (this.disabled == false) && this.required && (this.value == '')){
+         this.style.borderColor = 'red';
+         valid = false;
+       }
+       else {
+         this.style.borderColor = '#ccc';
+       }
+    });
+    if (!valid){
+        document.getElementById('myalert').style.display = "block";
+    }
+    else {
+        document.getElementById('myalert').style.display = "none";
+    }
+
+    return valid;
+};
+
+$(document).ready(function () {
     $("#depSubmit").submit(function () {
         //disable button on click
         $(".submitBtn").attr("disabled", true);
@@ -96,9 +137,45 @@ $(document).ready(function () {
         //disable cancel too
         $("#cancelBtn").attr("disabled", true);
         $("#cancelBtn").attr("onclick", "#");
+
+        // Process complex types, like list and map
+        var data_json = $('#depSubmit').serializeJSON();
+        var tmpElems = $("input[data-output-type='json']");
+
+        for (j = 0; j < tmpElems.length; j++) {
+          let jname = tmpElems[j].name;
+
+          if ( data_json[jname + "_tmp"] == undefined)
+          {
+             document.getElementById('id-' + jname).disabled = true;
+
+          }
+          else
+          {
+            //console.log(data_json[jname + "_tmp"]);
+
+            var el = document.getElementById('id-' + jname);
+            el.value =  JSON.stringify(data_json[jname + "_tmp"]);
+            // remove the "auxiliary" container
+            document.getElementById(jname + '-container').remove();
+          }
+        }
+
+        $("select[data-action='removeOnSubmit']").remove();
+
+        // fix scalar-unit.size combining value with units
+        var tmpElems = $("input[data-type='scalar-unit.size']");
+        for (j = 0; j < tmpElems.length; j++) {
+          let elem = tmpElems[j];
+          elem.type = "text";
+          elem.value = elem.value + " " + elem.getAttribute("data-units");
+        }
+
         return true;
+
     });
 });
+
 
 $(document).ready(function () {
 
@@ -131,9 +208,68 @@ $(document).ready(function () {
   });
 });
 
+function validatePorts(input){
+  var port = $(input)
+  //console.log("val: \"" + port.val() + "\"");
+  let val = port.val();
+  let re = /(^\[[0-9]+,[0-9]+\]$)|(^[0-9]+$)/;
+  if (!re.test(val)){
+    port.addClass("is-invalid");
+  }
+  else {
+    //console.log("ok");
+    port.removeClass("is-invalid");
+  }
+}
+
+function validateCidr(input){
+  var cidr = $(input)
+  //console.log("val: \"" + cidr.val() + "\"");
+  let val = cidr.val();
+  let re = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}\/([0-9]|[1-2][0-9]|3[0-2])$/;
+  if (!re.test(val)){
+    cidr.addClass("is-invalid");
+  }
+  else {
+    //console.log("ok");
+    cidr.removeClass("is-invalid");
+  }
+}
+
+function validateHostname(input){
+  var hostname = $(input)
+  //console.log("val: \"" + hostname.val() + "\"");
+  let val = hostname.val();
+  let re = /^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$/;
+  if (!re.test(val)){
+    hostname.addClass("is-invalid");
+  }
+  else {
+    //console.log("ok");
+    hostname.removeClass("is-invalid");
+  }
+}
+
+function __attachValidationHandler(input) {
+  console.log(input);
+  var valfunc = input.data("validate-function");
+  if (typeof valfunc !== 'undefined' && valfunc.length > 0) {
+
+    input.on("blur", function(){
+        eval(valfunc)($(this));
+    });
+  }
+}
+
+$(document).ready(function () {
+  $("#depSubmit").find("input").each(function() {
+        __attachValidationHandler($(this));
+    });
+});
+
 </script>
 
-{% if ssh_pub_key is none  %}
+{% if enable_vault_integration and ssh_pub_key is none  %}
 <script type="text/javascript">
     if (!localStorage.DoNotShowMessageAgain || localStorage.DoNotShowMessageAgain != "true") {
     $(window).on('load',function(){
@@ -147,6 +283,8 @@ $('#popupMaintenanceCheckbox').click(function(){
     }
 });
 </script>
+
+
 {% endif  %}
 
 {% endblock %}

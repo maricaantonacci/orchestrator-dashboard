@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container-fluid">
+    <br>
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <div class="row">
+                <div class="col-md-6">
+                    <!-- Title -->
+                    <h4 class="font-weight-bold text-primary">Virtual Machines</h4>
+                </div>
+                <div class="col-md-6 text-right">
+                    <!-- Button -->
+                    <button type="button" class="btn btn-small btn-outline-secondary"
+                            onclick="location.href='{{ url_for('deployments_bp.showdeployments') }}'"><span
+                            class='fas fa-arrow-left mr-2'></span>Back
+                    </button>
+                    <button type=button class='btn btn-outline-secondary' onclick='location.reload()'><span
+                            class='fas fa-sync mr-2'></span>Refresh
+                    </button>
+                </div>
+            </div> <!-- / .row -->
+        </div>
+        <div class="card-body">
+
+            <div class="table-responsive" style="overflow:inherit;">
+                <table class="table table-bordered table-striped table-hover" id="tableUserDeployments" width="100%"
+                       cellspacing="0">
+                    <!--Table head-->
+                    <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Hardware configuration</th>
+                        <th>Network interfaces</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <!--Table body-->
+                    <tbody>
+                    {% for info in vmsdetails %}
+                    <tr>
+                        <td>{{info.instance_name}}</td>
+                        <td>
+                            <p><strong>cores:</strong> {{info['cpu.count']}}</p>
+                            <p><strong>ram:</strong> {{info['memory.size']/1048576}} MB</p>
+                            {% if 'disk.0.free_size' in info %}
+                            <p><strong>disk:</strong> {{info['disk.0.free_size']/1073741824}} GB</p>
+                            {% endif %}
+                            <p><strong>Operating System:</strong> {{info['disk.0.os.flavour']}}
+                                {{info['disk.0.os.version']}}</p>
+                        </td>
+                        <td>
+                            {% set ips = (info | extract_netinterface_ips) %}
+                            {% for k,v in ips.items() %}
+                            <p><strong>{{k}}:</strong> {{v}}</p>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% if info.state == "STARTED" %}
+                            <span class="badge badge-success"/>
+                            {% elif info.state in ["STOPPED", "off"] %}
+                            <span class="badge badge-warning text-white"/>
+                            {% elif info.state in ["failed", "unconfigured", "unknown"] %}
+                            <span class="badge badge-danger"/>
+                            {% else %}
+                            <span class="badge badge-warning text-white"><span
+                                    class="spinner-grow spinner-grow-sm"/></span>
+                            {% endif %}
+                            {{info.state}}
+                        </td>
+                        <td>
+                            <div class="btn-group-vertical">
+                                <!-- Actions -->
+                                {% set start_enable = 'disabled' %}
+                                {% set stop_enable = 'disabled' %}
+                                {% if info.state == "STOPPED" %}{% set start_enable = 'enabled' %}{% endif %}
+                                {% if info.state == "STARTED" %}{% set stop_enable = 'enabled' %}{% endif %}
+                                <a class="btn btn-danger btn-sm {{stop_enable}}" data-toggle="modal"
+                                   data-target="#confirm_action"
+                                   data-text="Do you really want to stop the VM {{ info.instance_name }}?"
+                                   data-url="{{ url_for('deployments_bp.depaction', depid=info.depId, vmid=info.resId, action='stop') }}"><span
+                                        class="fas fa-stop mr-2 grey-text"></span>Stop VM</a>
+                                <a class="btn btn-info btn-sm {{start_enable}}" data-toggle="modal"
+                                   data-target="#confirm_action"
+                                   data-text="Do you really want to start the VM {{ info.instance_name }}?"
+                                   data-url="{{ url_for('deployments_bp.depaction', depid=info.depId, vmid=info.resId, action='start') }}"><span
+                                        class="fas fa-play mr-2 grey-text"></span>Start VM</a>
+
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                    <!--Table body-->
+                </table>
+            </div>
+            <div class="modal fade confirm_action" id="confirm_action" role="dialog">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="confirm_action_label"><strong>Confirm action</strong></h5>
+                            <button type="button" class="close" data-dismiss="modal">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                        </div>
+                        <div class="modal-footer">
+                            <form class="form-inline" id="performActionForm" action="#" method="post">
+                                <a class="btn btn-outline-primary cancelActionBtn mr-2" role="button"
+                                   data-dismiss="modal">Cancel</a>
+                                <button type="submit" class="btn btn-success execActionBtn" role="button">Execute
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <br><br>
+    <!-- ACTION MODAL -->
+
+</div>
+
+<style>
+.btn-group-vertical > a{
+    margin-bottom:5px;
+    border-radius:5px !important;
+}
+</style>
+
+<script>setTimeout(function(){location.reload();},30000);</script>
+
+<script>
+$(document).ready(function () {
+
+    $('#tableUserDeployments').dataTable( {
+        "responsive": true,
+         "columnDefs": [
+             {
+                "targets"  : 'no-sort',
+                "orderable": false,
+             },
+         ],
+        "order": [[ 2, "desc" ]]
+    });
+});
+
+</script>
+
+<script>
+$(document).ready(function () {
+    $(".execActionBtn").click(function () {
+        // add spinner to button
+        $(this).parent().find(".cancelActionBtn").addClass("disabled", true);
+        $(this).addClass("disabled", true);
+        $(this).html( `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Executing...` );
+    });
+});
+
+</script>
+
+<script>
+$('.confirm_action').on('show.bs.modal', function (event) {
+    var target = $(event.relatedTarget) // Button that triggered the modal
+    // Extract info from data-* attributes
+    var title = target.data('text')
+    var url = target.data('url')
+
+    var modal = $(this)
+    modal.find('.modal-body').text(title)
+    modal.find('#performActionForm').prop('action', url)
+})
+
+</script>
+{% endblock %}
+
